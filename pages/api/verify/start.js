@@ -1,56 +1,39 @@
-import { randomUUID } from "crypto";
-import absoluteUrl from "next-absolute-url";
-import { DID, KID, PRESENTATION_DEFINITION, PRIVATE_KEY } from "../../../lib/constants";
-import { DB } from "../../../lib/db";
-import { getRP } from "../../../lib/rp";
+import fetch from "node-fetch";
 
-const WALLET_URL = process.env.WALLET_URL;
-if (!WALLET_URL) throw new Error("WALLET_URL not set");
+const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN;
+const AUTH0_CLIENT_ID = process.env.AUTH0_CLIENT_ID;
+const AUTH0_SECRET = process.env.AUTH0_SECRET;
+const TEMPLATE_ID = process.env.TEMPLATE_ID;
 
-// Endpoint used by the front end to start a presentation flow
+if (!AUTH0_DOMAIN) throw new Error("AUTH0_DOMAIN not set");
+if (!AUTH0_CLIENT_ID) throw new Error("AUTH0_CLIENT_ID not set");
+if (!AUTH0_SECRET) throw new Error("AUTH0_SECRET not set");
+if (!TEMPLATE_ID) throw new Error("TEMPLATE_ID not set");
+
 export default async function handler(req, res) {
-  try {
-    const result = await start(req);
-    res.status(200).json(result);
-  } catch (err) {
-    res.status(500).send({ error: err.message });
+    try {
+      const result = await run();
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).send({ error: err.message });
+    }
   }
-}
 
-async function start(req) {
-  // Generate a presentation request
-  const nonce = randomUUID();
-  const rpKeys = {
-    hexPrivateKey: PRIVATE_KEY,
-    did: DID,
-    kid: KID,
-  };
-  const presentationDefinition = {
-    location: "vp_token",
-    definition: PRESENTATION_DEFINITION,
-  };
-
-  const presentationReq = {
-    nonce,
-    rpKeys,
-    presentationDefinition,
-    status: "pending",
-  };
-  const urlBase = absoluteUrl(req).origin;
-  const rp = getRP(presentationReq, urlBase);
-  const authReq = await rp.createAuthenticationRequest({ nonce });
-  const now = new Date();
-
-  // Store the presentation request in the "database" (in memory store for this demo)
-  DB.set(nonce, { ...presentationReq, jwt: authReq.jwt, expiresAt: new Date(now.getTime() + 600000) });
-
-  const reqParams = new URLSearchParams(authReq.encodedUri);
-  
-  // this is the URL that would be QR Code encoded for a wallet to scan and start the credential
-  // presentation flow
-  const url = `${WALLET_URL}/siop?scope=${reqParams.get("scope")}&request_uri=${encodeURIComponent(
-    reqParams.get("request_uri")
-  )}&registration=${encodeURIComponent(reqParams.get("registration"))}`;
-
-  return { url, request_id: nonce };
-}
+  async function run() {
+    const result = await fetch(`https://${AUTH0_DOMAIN}/vcs/presentation-request`, {
+      method: "post",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        client_id: AUTH0_CLIENT_ID,
+        client_secret: AUTH0_SECRET,
+        template_id: TEMPLATE_ID,
+      }),
+    });
+    const { url, request_id, expires_at } = await result.json();
+   
+    // the url is the "QR Code" that a wallet would scan
+    return { url, request_id, expires_at };
+   }

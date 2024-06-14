@@ -1,7 +1,6 @@
 import Head from "next/head";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader } from "../components/loader";
-import { usePrecompileHack } from '../lib/usePrecompileHack';
 import styles from "../styles/index.module.css";
 
 export default function Home() {
@@ -9,9 +8,8 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
   const [url, setUrl] = useState("");
-  const timerRef = useRef(null);
 
-  usePrecompileHack();
+  const timerRef = useRef(null);
 
   // Clear the timeout
   useEffect(() => {
@@ -64,13 +62,13 @@ export default function Home() {
 
       // walletUrl would normally be encoded into a QR code that a user
       // would scan with the wallet app.
-      const walletUrl = url.replace("openid://", "https://wallet.verifiablecredentials.dev/siop");
+      const walletUrl = url.replace("openid-vc://", "https://wallet.verifiablecredentials.dev/siop");
       setUrl(walletUrl);
 
       // Start polling for a result. This happens once the user
       // follows the walletUrl link and presents a credential from ID Walelt
       const { presentation } = await pollForPresentation(request_id);
-
+      presentation.verifiableCredential = presentation.verifiableCredential.map(parseJwt);
       setPresentation(presentation);
     } catch (err) {
       console.log(err);
@@ -85,6 +83,15 @@ export default function Home() {
     setUrl("");
   };
 
+  const parseJwt = (token) => {
+    if (!token) {
+      return;
+    }
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace("-", "+").replace("_", "/");
+    return JSON.parse(window.atob(base64));
+  };
+
   return (
     <div className={styles.container}>
       <Head>
@@ -92,39 +99,41 @@ export default function Home() {
       </Head>
 
       <main className={styles.main}>
-        <h1 className={styles.title}>Credential Verification</h1>
+        <h1 className={styles.title}>Processo Seletivo - Analista de Sistemas</h1>
+        <h2>Alphabeta Recrutadores</h2>
+        <h3>Apresente seu diploma do Ensino Superior para avançar para próxima fase.</h3>
         <div className={styles.loaderContainer}>
           {loading ? (
             <Loader />
           ) : (
             <button className={styles.button} onClick={onClick}>
-              Start Presentation Flow with Local Verification
+              APRESENTAR DIPLOMA
             </button>
           )}
         </div>
         {url && !presentation && (
           <p>
-            Click{" "}
+            Clique{" "}
             <a href={url} target="_blank" rel="noreferrer">
-              HERE
+              AQUI
             </a>{" "}
-            to open wallet and preset your credential
+            para abrir a carteira e apresentar seu diploma
           </p>
         )}
         {url && !presentation ? (
           <p>
-            Status: <code>{status}</code>
+            Situação: <code>{status}</code>
           </p>
         ) : null}
 
         {presentation && (
           <div className={styles.presentation}>
-            <pre>{JSON.stringify(presentation, null, 4)} </pre>
+            <pre className={styles.jwt}>{JSON.stringify(presentation, null, 4)} </pre>
           </div>
         )}
         {url && (
           <button className={styles.reset} onClick={reset}>
-            Reset
+            Reiniciar
           </button>
         )}
       </main>

@@ -1,28 +1,48 @@
-import { DB } from "../../../lib/db";
+import fetch from "node-fetch";
 
-// Endpoint used by the front end to check if a presentation has been received
+const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN;
+const AUTH0_CLIENT_ID = process.env.AUTH0_CLIENT_ID;
+const AUTH0_SECRET = process.env.AUTH0_SECRET;
+const TEMPLATE_ID = process.env.TEMPLATE_ID;
+
+if (!AUTH0_DOMAIN) throw new Error("AUTH0_DOMAIN not set");
+if (!AUTH0_CLIENT_ID) throw new Error("AUTH0_CLIENT_ID not set");
+if (!AUTH0_SECRET) throw new Error("AUTH0_SECRET not set");
+if (!TEMPLATE_ID) throw new Error("TEMPLATE_ID not set");
+
 export default async function handler(req, res) {
-  const { request_id } = req.body;
+    try {
+      const id = req.body.request_id;
+      const result = await run(id);
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).send({ error: err.message });
+    }
+   }
 
-  if (!request_id) {
-    return res.status(400).json({
-      error: "invalid_request",
-      error_description: "request_id is mandatory",
-    });
-  }
-
-  const presentationReq = DB.get(request_id);
-  if (!presentationReq) {
-    return res.status(400).json({
-      error: "invalid_request",
-      error_description: `unknown request_id: ${request_id}`,
-    });
-  }
-
-  if (presentationReq.status === "verified") {
-    DB.delete(request_id);
-  }
-  const { status, response: presentation } = presentationReq;
-
-  res.status(200).json({ status, presentation });
-}
+   async function run(id) {
+    if (!id) throw new Error("request_id not found");
+  
+    const result = await fetch(
+      `https://${AUTH0_DOMAIN}/vcs/presentation-request/${id}/status`,
+      {
+        method: "post",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          client_id: AUTH0_CLIENT_ID,
+          client_secret: AUTH0_SECRET,
+          template_id: TEMPLATE_ID,
+        }),
+      }
+    );
+  
+    const data = await result.json();
+  
+    if (data.presentation) {
+      data.presentation = JSON.parse(data.presentation);
+    }
+  
+    return data;
+  }  

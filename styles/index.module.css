@@ -57,3 +57,17 @@
 .flowselect {
   margin: 20px;
 }
+
+.code {
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  padding: 20px 10px;
+  background: none;
+}
+
+.jwt {
+  white-space: pre;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  padding: 20px;
+}

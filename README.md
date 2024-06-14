@@ -2,21 +2,16 @@
 
 # Auth0 Lab Hands on Lab: Auth0 as verifier
 
-![ba# Example: Local Presentation Request Verifier
+This repo is for a hands-on lab, found [TODO](todo).
 
-This sample application shows how to perform Verifiable Presentation verification using local methods, as an alternative to using Auth0 as a verifier. 
-
-To see this sample app, but using Auth0 as a verifier, check out this repo:
-[auth0-lab/hol-verifier-auth0](https://github.com/auth0-lab/hol-verifier-auth0)
+The final completed version of this lab is available in the `end-state` branch of this repo
 
 > :warning: This is a PROOF OF CONCEPT experimental library meant to support the learning of verifiable credentials and has not had a complete security review. As we learn and iterate, please be aware that releases may contain breaking changes.
 
-High level notes:
+### Local Verification
 
-- `/api/verify/start` - called by this app's UI to start the verification process
-- `/api/verify/check` - called by this app, every second, to check the status of a previously started process
-- `/api/verify/request/:id` - called by the wallet to get the full details of the presentation request
-- `/api/verify/response/:id`- called by the wallet, it posts the presentation here
+If you would like to see a version of this app using local verification, without Auth0, please checkout this repo: 
+[auth0-lab/hol-verifier-local](https://github.com/auth0-lab/hol-verifier-local)
 
 ## What is Auth0?
 
